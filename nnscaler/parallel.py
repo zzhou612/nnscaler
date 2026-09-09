@@ -24,6 +24,8 @@ from collections import OrderedDict, defaultdict
 import torch
 import torch.distributed
 
+from chronotrigger.trace import bind_range_names
+
 from nnscaler.codegen import ModuleCodeGen
 from nnscaler.codegen.serialization import codegen_pickle_recursion_limit
 from nnscaler.codegen.schedule.schedule import ScheduleCodeGen
@@ -1045,6 +1047,11 @@ def _remove_legacy_attr_meta_files(outdir: Path) -> None:
 
 
 def _promote_codegen_outputs(staging_dir: Path, outdir: Path, runtime_ngpus: int) -> None:
+    for rank in range(runtime_ngpus):
+        filename = _GENCODE_FILE_TEMPLATE.format(rank)
+        staged = staging_dir / filename
+        source = staged.read_text(encoding='utf-8')
+        staged.write_text(bind_range_names(source, artifact=outdir / filename), encoding='utf-8')
     for rank in range(runtime_ngpus):
         filename = _GENCODE_FILE_TEMPLATE.format(rank)
         os.replace(staging_dir / filename, outdir / filename)

@@ -329,9 +329,10 @@ def clip_gnorm(
         local_gnorm, local_grads = calcuate_gnorm(localparams, device)
         total_grad_square += local_gnorm.to(dtype=torch.float64).pow_(2).div_(nreplicas)
         grads.extend(local_grads)
-    with ct.range(
-        ct.Kind.REDUCE,
-        "optimizer.grad_norm.all_reduce",
+    with ct.named_range(
+        name="nnscaler.runtime.gnorm.clip_gnorm.site0",
+        kind=ct.Kind.REDUCE,
+        entity="optimizer.grad_norm.all_reduce",
         process_scope=False,
     ):
         dist.all_reduce(total_grad_square)

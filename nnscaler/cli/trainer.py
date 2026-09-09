@@ -1088,9 +1088,10 @@ class Trainer:
             self.hook.on_train_step_end(self, losses[:num_batches])
 
             aggregate_outputs = self.train_args.resolved_aggregate_outputs_fn or self.aggregate_outputs
-            with ct.range(
-                ct.Kind.REDUCE,
-                "trainer.output.aggregate",
+            with ct.named_range(
+                name="nnscaler.cli.Trainer._train_epoch.site0",
+                kind=ct.Kind.REDUCE,
+                entity="trainer.output.aggregate",
                 process_scope=False,
             ):
                 aggregated_outputs = aggregate_outputs(losses[:num_batches], self.sync_group)
@@ -1108,9 +1109,10 @@ class Trainer:
             self.hook.before_sync_grad(self)
             # `sync_shard_grad` is no-op if the whole model is parallelized
             #  because syncing grad in end2end model is done in `_train_step`.
-            with ct.range(
-                ct.Kind.REDUCE,
-                "optimizer.sync_shard_grad",
+            with ct.named_range(
+                name="nnscaler.cli.Trainer._train_epoch.site1",
+                kind=ct.Kind.REDUCE,
+                entity="optimizer.sync_shard_grad",
                 process_scope=False,
             ):
                 self.optimizer.sync_shard_grad()
@@ -1130,9 +1132,10 @@ class Trainer:
                 if not aggregated_outputs.num_tokens:
                     raise RuntimeError("`aggregate_outputs` doesn't set `num_tokens` field")
                 multiplier /= aggregated_outputs.num_tokens
-            with ct.range(
-                ct.Kind.OPTIMIZER,
-                "optimizer.scale_grads",
+            with ct.named_range(
+                name="nnscaler.cli.Trainer._train_epoch.site2",
+                kind=ct.Kind.OPTIMIZER,
+                entity="optimizer.scale_grads",
                 process_scope=False,
             ):
                 self.optimizer.scale_grads(multiplier)
@@ -1143,9 +1146,10 @@ class Trainer:
 
             # clip gradients
             self.hook.before_gnorm_clip(self)
-            with ct.range(
-                ct.Kind.OPTIMIZER,
-                "optimizer.clip_gnorm",
+            with ct.named_range(
+                name="nnscaler.cli.Trainer._train_epoch.site3",
+                kind=ct.Kind.OPTIMIZER,
+                entity="optimizer.clip_gnorm",
                 process_scope=False,
             ):
                 if self.train_args.optimizer.clip_gnorm:
@@ -1153,9 +1157,10 @@ class Trainer:
                 else:
                     step_stat.gnorm = self.optimizer.clip_gnorm()
             self.hook.after_gnorm_clip(self, step_stat.gnorm)
-            with ct.range(
-                ct.Kind.OPTIMIZER,
-                "optimizer.grad_norm.item",
+            with ct.named_range(
+                name="nnscaler.cli.Trainer._train_epoch.site4",
+                kind=ct.Kind.OPTIMIZER,
+                entity="optimizer.grad_norm.item",
                 process_scope=False,
             ):
                 step_stat.gnorm = step_stat.gnorm.item()

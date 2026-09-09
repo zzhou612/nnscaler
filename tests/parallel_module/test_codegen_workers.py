@@ -102,29 +102,31 @@ def _load_compact_raw_maps(module_dir: Path) -> tuple[dict, list[dict]]:
 )
 def test_multi_process_codegen_matches_serial(tmp_path, model_factory, use_end2end):
     serial_dir = _generate(
-        tmp_path / 'serial',
+        tmp_path / 'generated',
         model_factory(),
         codegen_workers=1,
         use_end2end=use_end2end,
     )
+    serial_code = [(serial_dir / f'gencode{rank}.py').read_bytes() for rank in range(2)]
+    serial_compact_meta, serial_attr_meta = _load_compact_raw_maps(serial_dir)
+    assert not list(serial_dir.glob('attr_meta[0-9]*.pkl'))
     parallel_dir = _generate(
-        tmp_path / 'parallel',
+        tmp_path / 'generated',
         model_factory(),
         codegen_workers=2,
         use_end2end=use_end2end,
+        reuse='override',
     )
 
     for rank in range(2):
-        assert (serial_dir / f'gencode{rank}.py').read_bytes() == (
+        assert serial_code[rank] == (
             parallel_dir / f'gencode{rank}.py'
         ).read_bytes()
 
-    serial_compact_meta, serial_attr_meta = _load_compact_raw_maps(serial_dir)
     parallel_compact_meta, parallel_attr_meta = _load_compact_raw_maps(parallel_dir)
     assert serial_attr_meta == parallel_attr_meta
     assert serial_compact_meta['version'] == ParallelModule.ATTR_META_FORMAT_VERSION
     assert parallel_compact_meta['version'] == ParallelModule.ATTR_META_FORMAT_VERSION
-    assert not list(serial_dir.glob('attr_meta[0-9]*.pkl'))
     assert not list(parallel_dir.glob('attr_meta[0-9]*.pkl'))
 
     if model_factory is _End2EndModel:
