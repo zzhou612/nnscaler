@@ -1174,7 +1174,7 @@ class ModuleCodeGen(FuncEmission):
             wrapped_codes = codes
             if model_spec is not None:
                 component_code = (
-                    f'with ct.named_range(kind={"model/" + model_spec.component!r}, '
+                    f'with ct.range(kind={"model/" + model_spec.component!r}, '
                     f'entity={model_spec.model_fqn!r}, '
                     f'model_site={model_spec.model_site!r}, '
                     'process_scope=False):'
